@@ -40,6 +40,11 @@ PDF_LADDER = [
     (150, 75),
 ]
 
+EDITOR_DATA_NOTE = (
+    "Đã bỏ dữ liệu chỉnh sửa ẩn của Photoshop/Illustrator (không hiển thị khi xem hoặc in). "
+    "Bản nén không mở lại được dạng layer trong Photoshop/Illustrator; bản gốc vẫn giữ nguyên."
+)
+
 
 # ---------------------------------------------------------------------------
 # Tên file / an toàn dữ liệu
@@ -516,6 +521,21 @@ def _open_pdf_checked(src: Path):
     return doc
 
 
+def _strip_editor_data(doc) -> bool:
+    """Bỏ dữ liệu chỉnh sửa ẩn (Photoshop/Illustrator) không dùng để hiển thị."""
+    catalog = doc.pdf_catalog()
+    page_xrefs = [page.xref for page in doc]
+    removed = False
+    for xref in page_xrefs + [catalog]:
+        if doc.xref_get_key(xref, "PieceInfo")[0] != "null":
+            doc.xref_set_key(xref, "PieceInfo", "null")
+            removed = True
+        if xref != catalog and doc.xref_get_key(xref, "Thumb")[0] != "null":
+            doc.xref_set_key(xref, "Thumb", "null")
+            removed = True
+    return removed
+
+
 def compress_pdf(
     src_path: str | Path,
     out_dir: str | Path,
@@ -553,6 +573,8 @@ def compress_pdf(
             "dpi": None,
             "page_count": page_count,
             "text_identical": True,
+            "editor_data_removed": False,
+            "images_recompressed": False,
             "ssim": 1.0,
             "downscaled": False,
             "target_bytes": target_bytes,
@@ -564,58 +586,90 @@ def compress_pdf(
     finally:
         doc.close()
 
-    best: tuple[bytes, int | None, int | None] | None = None
+    best: tuple[bytes, int | None, int | None, bool, bool] | None = None
     last_error: Exception | None = None
+    step0_met_target = False
 
-    for dpi, quality in PDF_LADDER:
+    # Bước 0: chỉ bỏ dữ liệu chỉnh sửa ẩn, không đụng tới ảnh.
+    try:
+        work = _open_pdf_checked(src)
         try:
-            work = _open_pdf_checked(src)
+            editor_data_removed = _strip_editor_data(work)
             try:
-                work.rewrite_images(
-                    dpi_threshold=dpi + 10,
-                    dpi_target=dpi,
-                    quality=quality,
-                )
-                try:
-                    work.subset_fonts()
-                except Exception as exc:  # subset_fonts không bắt buộc phải thành công
-                    print(f"  ! subset_fonts bỏ qua: {exc}", file=sys.stderr)
-                buf = io.BytesIO()
-                work.save(buf, garbage=4, deflate=True, use_objstms=1)
-                data = buf.getvalue()
-            finally:
-                work.close()
+                work.subset_fonts()
+            except Exception as exc:  # subset_fonts không bắt buộc phải thành công
+                print(f"  ! subset_fonts bỏ qua: {exc}", file=sys.stderr)
+            buf = io.BytesIO()
+            work.save(buf, garbage=4, deflate=True, use_objstms=1)
+            data = buf.getvalue()
+        finally:
+            work.close()
 
-            check = pymupdf.open(stream=data, filetype="pdf")
+        check = pymupdf.open(stream=data, filetype="pdf")
+        try:
+            same_pages = check.page_count == page_count
+        finally:
+            check.close()
+        if not same_pages:
+            print("  ! Bỏ qua bước 0: số trang thay đổi", file=sys.stderr)
+        else:
+            best = (data, None, None, False, editor_data_removed)
+            step0_met_target = len(data) <= target_bytes
+    except Exception as exc:
+        last_error = exc
+        print(f"  ! Lỗi ở bước 0: {exc}", file=sys.stderr)
+
+    if not step0_met_target:
+        for dpi, quality in PDF_LADDER:
             try:
-                same_pages = check.page_count == page_count
-            finally:
-                check.close()
-            if not same_pages:
+                work = _open_pdf_checked(src)
+                try:
+                    editor_data_removed = _strip_editor_data(work)
+                    work.rewrite_images(
+                        dpi_threshold=dpi + 10,
+                        dpi_target=dpi,
+                        quality=quality,
+                    )
+                    try:
+                        work.subset_fonts()
+                    except Exception as exc:  # subset_fonts không bắt buộc phải thành công
+                        print(f"  ! subset_fonts bỏ qua: {exc}", file=sys.stderr)
+                    buf = io.BytesIO()
+                    work.save(buf, garbage=4, deflate=True, use_objstms=1)
+                    data = buf.getvalue()
+                finally:
+                    work.close()
+
+                check = pymupdf.open(stream=data, filetype="pdf")
+                try:
+                    same_pages = check.page_count == page_count
+                finally:
+                    check.close()
+                if not same_pages:
+                    print(
+                        f"  ! Bỏ qua bậc {dpi} DPI/q{quality}: số trang thay đổi",
+                        file=sys.stderr,
+                    )
+                    continue
+
+                if len(data) <= target_bytes:
+                    best = (data, dpi, quality, True, editor_data_removed)
+                    break
+                if best is None or len(data) < len(best[0]):
+                    best = (data, dpi, quality, True, editor_data_removed)
+            except Exception as exc:
+                last_error = exc
                 print(
-                    f"  ! Bỏ qua bậc {dpi} DPI/q{quality}: số trang thay đổi",
+                    f"  ! Lỗi ở bậc {dpi} DPI/q{quality}: {exc}",
                     file=sys.stderr,
                 )
-                continue
-
-            if len(data) <= target_bytes:
-                best = (data, dpi, quality)
-                break
-            if best is None or len(data) < len(best[0]):
-                best = (data, dpi, quality)
-        except Exception as exc:
-            last_error = exc
-            print(
-                f"  ! Lỗi ở bậc {dpi} DPI/q{quality}: {exc}",
-                file=sys.stderr,
-            )
 
     if best is None:
         raise RuntimeError(
             f"Không thể nén PDF: {last_error}" if last_error else "Không thể nén PDF."
         )
 
-    data, dpi, quality = best
+    data, dpi, quality, images_recompressed, editor_data_removed = best
     status = "ok" if len(data) <= target_bytes else "target_not_met"
 
     # Nếu bản "nén" lại lớn hơn bản gốc thì giữ nguyên bản gốc (an toàn hơn).
@@ -623,6 +677,8 @@ def compress_pdf(
         data = src.read_bytes()
         dpi = None
         quality = None
+        images_recompressed = False
+        editor_data_removed = False
         status = "target_not_met"
 
     out_doc = pymupdf.open(stream=data, filetype="pdf")
@@ -655,6 +711,8 @@ def compress_pdf(
         "dpi": dpi,
         "page_count": page_count,
         "text_identical": bool(text_identical),
+        "editor_data_removed": bool(editor_data_removed),
+        "images_recompressed": bool(images_recompressed),
         "ssim": round(quality_ssim, 4),
         "downscaled": False,
         "target_bytes": target_bytes,
@@ -781,7 +839,7 @@ def _print_table(results: list[dict], out_paths: list[Path]) -> None:
             resolution = (
                 f'{res.get("page_count", 0)} pages, {dpi} dpi'
                 if dpi
-                else f'{res.get("page_count", 0)} pages, original'
+                else f'{res.get("page_count", 0)} pages, original images'
             )
         q = res.get("quality")
         if res["kind"] == "image":
@@ -881,6 +939,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_table(results, out_paths)
 
     warnings = []
+    notes = []
     for res, out_path in zip(results, out_paths):
         if res["status"] == "target_not_met":
             warnings.append(
@@ -892,10 +951,16 @@ def main(argv: list[str] | None = None) -> int:
                 f"{out_path.name}: không xác nhận được toàn bộ chữ giữ nguyên; "
                 "hãy kiểm tra lại bản nén."
             )
+        if res.get("editor_data_removed"):
+            notes.append(f"{out_path.name}: {EDITOR_DATA_NOTE}")
     if warnings:
         print()
         for warning in warnings:
             print(f"CẢNH BÁO: {warning}")
+    if notes:
+        print()
+        for note in notes:
+            print(f"LƯU Ý: {note}")
 
     print()
     print("SSIM gần 1.0 = gần giống bản gốc; chỉ là chỉ số tham khảo, hãy tự xem ảnh so sánh.")

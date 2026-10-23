@@ -85,6 +85,13 @@ def _warnings(result: dict) -> list[str]:
     return warnings
 
 
+def _notes(result: dict) -> list[str]:
+    notes: list[str] = []
+    if result.get("editor_data_removed"):
+        notes.append(compress.EDITOR_DATA_NOTE)
+    return notes
+
+
 def _public_result(result: dict, job_id: str, filename: str, target_mb: float) -> dict:
     original_bytes = int(result["original_bytes"])
     output_bytes = int(result["output_bytes"])
@@ -99,6 +106,9 @@ def _public_result(result: dict, job_id: str, filename: str, target_mb: float) -
         "status": result["status"],
         "status_message": _status_message(result),
         "warnings": _warnings(result),
+        "notes": _notes(result),
+        "editor_data_removed": bool(result.get("editor_data_removed")),
+        "images_recompressed": bool(result.get("images_recompressed")),
         "original_bytes": original_bytes,
         "output_bytes": output_bytes,
         "reduction_percent": round(reduction, 1),
@@ -149,7 +159,7 @@ def api_compress():
     except (TypeError, ValueError):
         return jsonify({"error": "Dung lượng mục tiêu không hợp lệ."}), 400
     if not math.isfinite(target_mb) or target_mb <= 0 or target_mb > 1000:
-        return jsonify({"error": "Dung lượng mục tiêu phải từ 0 đến 1000 MB."}), 400
+        return jsonify({"error": "Dung lượng mục tiêu phải lớn hơn 0 và không quá 1000 MB."}), 400
 
     kind = _kind_for(ext)
     job_id = uuid.uuid4().hex

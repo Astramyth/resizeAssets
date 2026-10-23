@@ -53,7 +53,7 @@ Yêu cầu: Windows, Python 3.12 đã có trên `PATH`.
   - PDF: cặp trang gốc/bản nén ở 150 DPI, có nút chuyển trang.
 - **Tải về** tải đúng file kết quả, tên dạng `<tên>_compressed.<đuôi>`.
 
-Giới hạn upload: 500 MB mỗi request.
+Giới hạn upload: 500 MB mỗi request. Trong ứng dụng, `1 MB = 1024 × 1024 byte`.
 
 ## Dùng dòng lệnh
 
@@ -83,7 +83,7 @@ Lệnh:
 .venv\Scripts\python test_compress.py
 ```
 
-Kết quả: **28/28 kiểm tra đạt**.
+Kết quả: **35/35 kiểm tra đạt**.
 
 | Hạng mục | Kết quả thực tế |
 |---|---|
@@ -93,9 +93,12 @@ Kết quả: **28/28 kiểm tra đạt**.
 | Cùng ảnh RGBA → mục tiêu 0.02 MB | `target_not_met`, vẫn tạo bản nhỏ nhất |
 | File 3.6 KB → mục tiêu 5 MB | `already_small`, bản sao byte-for-byte |
 | PDF 3 trang có ảnh lớn + chữ (1.21 MB) → mục tiêu 0.5 MB | 0.10 MB, 150 DPI/q80, đủ 3 trang, `text_identical: true`, SSIM 0.9907 |
+| PDF 1 trang có ảnh nhỏ + 3 MB `/PieceInfo` ẩn (3.01 MB) → mục tiêu 1 MB | 0.01 MB, `ok`, bỏ dữ liệu ẩn, không nén lại ảnh, render 72 DPI giống hệt |
 | PDF có mật khẩu | Báo `ValueError` tiếng Việt, không tạo file rác |
-| SHA-256 của 4 file gốc trước/sau | Không đổi |
+| SHA-256 của 5 file gốc trước/sau | Không đổi |
 | Preview ảnh/PDF | Trả đủ PNG, chọn đúng trang |
+| `python app.py` | Khởi động OK, `GET /` trả HTTP 200 tại `127.0.0.1:8765` |
+| Giao diện ở 390 px và 500 px | Không tràn ngang; nén ảnh/PDF, mở modal so sánh và chuyển trang PDF không lỗi JS |
 
 <details>
 <summary>Xem toàn bộ output kiểm tra</summary>
@@ -124,6 +127,13 @@ PASS: PDF đầu ra giữ đủ 3 trang
 PASS: Chữ trong PDF đầu ra giống bản gốc
 PASS: PDF không vượt mục tiêu khi trạng thái không phải target_not_met
 PASS: Mở lại PDF đầu ra thấy đúng 3 trang
+  editor_data.pdf -> editor_data_1_page_compressed.pdf, 0.01 MB, ok, bỏ dữ liệu ẩn: True
+PASS: PDF có dữ liệu chỉnh sửa ẩn giảm còn dưới 25% dung lượng gốc
+PASS: Đã bỏ dữ liệu chỉnh sửa ẩn khỏi PDF
+PASS: Bước bỏ dữ liệu ẩn không nén lại ảnh
+PASS: PDF bỏ dữ liệu ẩn giữ đúng 1 trang
+PASS: Chữ trong PDF bỏ dữ liệu ẩn giống bản gốc
+PASS: Trang PDF render 72 DPI giống hệt sau khi bỏ dữ liệu ẩn
 PASS: PDF có mật khẩu báo lỗi tiếng Việt rõ ràng
 PASS: Preview ảnh trả đủ 4 ảnh PNG
 PASS: Preview ảnh là dữ liệu PNG
@@ -133,8 +143,9 @@ PASS: Bản gốc không đổi: noise_3000x2000.png
 PASS: Bản gốc không đổi: alpha_1800x1200.png
 PASS: Bản gốc không đổi: small_300x200.jpg
 PASS: Bản gốc không đổi: invoice_3_pages.pdf
+PASS: Bản gốc không đổi: editor_data_1_page.pdf
 
-TẤT CẢ 28 KIỂM TRA ĐỀU ĐẠT
+TẤT CẢ 35 KIỂM TRA ĐỀU ĐẠT
 ```
 
 </details>
@@ -176,10 +187,12 @@ Sample-jpg-image-30mb-16_compressed.jpg  13.45      4.89      36.4%  13583x5417 
 
 - Nếu file gốc đã ≤ mục tiêu: sao chép nguyên byte, trạng thái `already_small`.
 - PDF có mật khẩu (`needs_pass`) bị từ chối ngay bằng `ValueError` tiếng Việt.
+- **Bước 0 (bỏ dữ liệu chỉnh sửa ẩn):** mở bản gốc, đặt `/PieceInfo` = null ở từng trang và ở catalog, bỏ `/Thumb` ở trang, thử `subset_fonts()`, rồi lưu bằng `garbage=4, deflate=True, use_objstms=1` nhưng **không** gọi `rewrite_images`. Nếu kết quả đã ≤ mục tiêu thì dùng luôn với `dpi=None`, `quality=None`, `images_recompressed=False`. Không đụng tới file nhúng, annotation, form hay XMP.
 - Thang nén: `(300,90) → (250,85) → (200,85) → (200,80) → (150,80) → (150,75)` (DPI, quality JPEG).
-- Mỗi bậc mở lại **file gốc**, gọi `rewrite_images(dpi_threshold=dpi+10, dpi_target=dpi, quality=quality)`, thử `subset_fonts()`, rồi lưu bằng `garbage=4, deflate=True, use_objstms=1`.
+- Mỗi bậc mở lại **file gốc**, bỏ dữ liệu chỉnh sửa ẩn, gọi `rewrite_images(dpi_threshold=dpi+10, dpi_target=dpi, quality=quality)`, thử `subset_fonts()`, rồi lưu bằng `garbage=4, deflate=True, use_objstms=1`.
 - Dừng ở bậc đầu tiên ≤ mục tiêu. Nếu không bậc nào đạt, giữ bản nhỏ nhất và trả `target_not_met`; nếu bản đó còn lớn hơn file gốc thì giữ nguyên file gốc (an toàn hơn).
 - Kiểm tra lại số trang phải bằng bản gốc. So sánh toàn bộ chữ bằng `page.get_text()`; kết quả là `text_identical`.
+- Kết quả PDF có thêm `editor_data_removed` (đã bỏ dữ liệu ẩn hay chưa) và `images_recompressed` (ảnh có bị encode lại hay không).
 - SSIM PDF: render trang 1, trang giữa và trang cuối (tối đa 3 trang) ở 100 DPI, ảnh xám, rồi lấy trung bình.
 
 ### An toàn dữ liệu và tên file
@@ -197,6 +210,8 @@ Sample-jpg-image-30mb-16_compressed.jpg  13.45      4.89      36.4%  13583x5417 
 - Ảnh JPEG/WebP bị encode lại nên có thể mất một ít chi tiết. Với ảnh đã nén mạnh từ trước, file ra có thể không nhỏ hơn nhiều.
 - Ảnh có cạnh dài dưới 2000 px sẽ không bị thu nhỏ thêm; nếu mục tiêu quá nhỏ, kết quả có thể là `target_not_met`.
 - PDF chỉ nén lại ảnh raster bên trong. Chữ, vector, form, annotation, liên kết được giữ nguyên; không OCR, không làm phẳng trang.
+- PDF chỉ có chữ/vector, hoặc ảnh bên trong đã nhỏ/sắc nét, thường **không thể giảm 50%**. Bước bỏ dữ liệu chỉnh sửa ẩn chỉ giúp khi file thực sự chứa dữ liệu đó.
+- Bỏ dữ liệu chỉnh sửa ẩn (Photoshop/Illustrator) là **không mất mát về mặt hiển thị/in**, nhưng bản nén sẽ không mở lại được dạng layer trong các ứng dụng đó; bản gốc vẫn giữ nguyên.
 - `subset_fonts()` có thể thất bại với một số font lạ; khi đó bỏ qua bước này và vẫn tiếp tục.
 - `text_identical` chỉ so sánh phần chữ trích xuất được. Chữ trong ảnh scan không được kiểm tra bằng so sánh text.
 - ICC được giữ cho ảnh RGB/RGBA/L/P. Ảnh CMYK hoặc 16-bit được chuyển sang RGB/L; profile ICC CMYK gốc không được gắn vào file RGB vì sai không gian màu.
@@ -211,7 +226,9 @@ Sample-jpg-image-30mb-16_compressed.jpg  13.45      4.89      36.4%  13583x5417 
 ```text
 compress.py        lõi nén ảnh/PDF + CLI
 app.py             Flask server (127.0.0.1:8765)
-static/index.html  giao diện web (HTML/CSS/JS thuần, tiếng Việt)
+static/index.html  markup giao diện web (tiếng Việt)
+static/style.css   toàn bộ CSS của giao diện
+static/app.js      toàn bộ JavaScript của giao diện
 requirements.txt   flask, pillow, numpy, pymupdf, pillow-heif
 run.bat            tạo .venv/cài thư viện lần đầu rồi chạy app
 test_compress.py   tự kiểm tra bằng assert, không cần pytest
