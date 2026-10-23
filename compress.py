@@ -247,7 +247,18 @@ def _encode_image(
         kwargs["exif"] = exif_bytes
     if icc_profile:
         kwargs["icc_profile"] = icc_profile
-    im.save(buf, format=fmt, **kwargs)
+    try:
+        im.save(buf, format=fmt, **kwargs)
+    except OSError:
+        if fmt != "JPEG":
+            raise
+        # Với ảnh rất chi tiết/nhiễu, buffer của encoder JPEG (ImageFile.MAXBLOCK)
+        # không đủ cho optimize/progressive. Thử lại một lần ở chế độ tuần tự,
+        # giữ nguyên quality/subsampling/exif/icc. Không nâng MAXBLOCK toàn cục
+        # vì sẽ tốn rất nhiều RAM với ảnh lớn.
+        buf = io.BytesIO()
+        kwargs.update(optimize=False, progressive=False)
+        im.save(buf, format=fmt, **kwargs)
     return buf.getvalue()
 
 

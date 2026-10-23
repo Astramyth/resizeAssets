@@ -15,6 +15,8 @@ import threading
 import traceback
 import uuid
 import webbrowser
+import zipfile
+from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
@@ -34,6 +36,9 @@ JOBS: dict[str, dict] = {}
 JOBS_LOCK = threading.Lock()
 JOB_ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
+ZIP_TEMP_FILES: set[Path] = set()
+ZIP_LOCK = threading.Lock()
+
 log = logging.getLogger("resizeassets")
 
 
@@ -45,7 +50,28 @@ def _cleanup_jobs() -> None:
         shutil.rmtree(job["dir"], ignore_errors=True)
 
 
+def _cleanup_zip(path: Path) -> None:
+    with ZIP_LOCK:
+        ZIP_TEMP_FILES.discard(path)
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _cleanup_zips() -> None:
+    with ZIP_LOCK:
+        paths = list(ZIP_TEMP_FILES)
+        ZIP_TEMP_FILES.clear()
+    for path in paths:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 atexit.register(_cleanup_jobs)
+atexit.register(_cleanup_zips)
 
 
 def _safe_filename(name: str | None) -> str:
@@ -53,6 +79,20 @@ def _safe_filename(name: str | None) -> str:
     name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", name)
     name = name.strip().strip(".")
     return name or "upload"
+
+
+def _unique_arcname(name: str, used: set[str]) -> str:
+    if name not in used:
+        used.add(name)
+        return name
+    path = Path(name)
+    n = 2
+    while True:
+        candidate = f"{path.stem} ({n}){path.suffix}"
+        if candidate not in used:
+            used.add(candidate)
+            return candidate
+        n += 1
 
 
 def _kind_for(ext: str) -> str | None:
@@ -221,6 +261,58 @@ def api_download(job_id: str):
         download_name=job["out"].name,
         mimetype="application/octet-stream",
     )
+
+
+@app.post("/api/zip")
+def api_zip():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Yêu cầu đóng gói ZIP không hợp lệ."}), 400
+
+    job_ids = payload.get("job_ids")
+    if not isinstance(job_ids, list) or not (1 <= len(job_ids) <= 500):
+        return (
+            jsonify({"error": "Danh sách file cần đóng gói phải có từ 1 đến 500 file."}),
+            400,
+        )
+    if any(
+        not isinstance(job_id, str) or not JOB_ID_RE.fullmatch(job_id)
+        for job_id in job_ids
+    ):
+        return jsonify({"error": "Mã file không hợp lệ."}), 400
+
+    with JOBS_LOCK:
+        jobs = [JOBS.get(job_id) for job_id in job_ids]
+    if any(job is None for job in jobs):
+        return (
+            jsonify({"error": "Không tìm thấy kết quả để đóng gói. Hãy nén lại file."}),
+            404,
+        )
+
+    temp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    temp_path = Path(temp.name)
+    temp.close()
+    try:
+        used: set[str] = set()
+        with zipfile.ZipFile(temp_path, "w", compression=zipfile.ZIP_STORED) as zf:
+            for job in jobs:
+                zf.write(job["out"], _unique_arcname(job["out"].name, used))
+    except Exception:
+        _cleanup_zip(temp_path)
+        log.error("Lỗi đóng gói ZIP:\n%s", traceback.format_exc())
+        return jsonify({"error": "Không đóng gói được file ZIP. Hãy thử lại."}), 500
+
+    with ZIP_LOCK:
+        ZIP_TEMP_FILES.add(temp_path)
+
+    response = send_file(
+        temp_path,
+        as_attachment=True,
+        download_name=f"da-nen_{datetime.now():%Y%m%d-%H%M}.zip",
+        mimetype="application/zip",
+    )
+    response.call_on_close(lambda: _cleanup_zip(temp_path))
+    return response
 
 
 def _get_previews(job: dict, page: int) -> dict:

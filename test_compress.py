@@ -9,6 +9,7 @@ import hashlib
 import io
 import sys
 import time
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -51,6 +52,13 @@ def make_noise_png(path: Path, w: int = 3000, h: int = 2000) -> None:
     base[..., 2] = ((xx + yy) * 255 // max(1, w + h - 2)).astype(np.int16)
     base += rng.integers(-18, 19, (h, w, 3), dtype=np.int16)
     arr = np.clip(base, 0, 255).astype(np.uint8)
+    Image.fromarray(arr, "RGB").save(path)
+
+
+def make_pure_noise_png(path: Path, w: int = 3000, h: int = 2000) -> None:
+    """Nhiễu ngẫu nhiên hoàn toàn: trường hợp làm tràn buffer encoder JPEG."""
+    rng = np.random.default_rng(20260101)
+    arr = rng.integers(0, 256, (h, w, 3), dtype=np.uint8)
     Image.fromarray(arr, "RGB").save(path)
 
 
@@ -116,6 +124,55 @@ def make_editor_pdf(path: Path, image_bytes: bytes) -> None:
         doc.save(path, garbage=4, deflate=True)
     finally:
         doc.close()
+
+
+def test_zip_endpoint() -> None:
+    """Nén 2 file cùng tên qua API rồi đóng gói ZIP, kiểm tra tên và nội dung."""
+    import app as web_app
+
+    client = web_app.app.test_client()
+    job_ids: list[str] = []
+    single_outputs: list[bytes] = []
+
+    for color in ((220, 40, 40), (40, 80, 220)):
+        buf = io.BytesIO()
+        Image.new("RGB", (64, 48), color).save(buf, format="PNG")
+        response = client.post(
+            "/api/compress",
+            data={"file": (io.BytesIO(buf.getvalue()), "cung-ten.png"), "target_mb": "5"},
+            content_type="multipart/form-data",
+        )
+        check(response.status_code == 200, "API nén nhận file để kiểm tra ZIP")
+        data = response.get_json()
+        check(bool(data and data.get("job_id")), "API nén trả job_id để kiểm tra ZIP")
+        job_ids.append(data["job_id"])
+
+        download = client.get(f"/api/download/{data['job_id']}")
+        check(download.status_code == 200, "Tải được từng file kết quả để so với ZIP")
+        single_outputs.append(download.data)
+
+    response = client.post("/api/zip", json={"job_ids": job_ids})
+    check(response.status_code == 200, "API ZIP trả về thành công")
+    check(response.mimetype == "application/zip", "API ZIP trả đúng MIME application/zip")
+
+    with zipfile.ZipFile(io.BytesIO(response.data)) as zf:
+        names = zf.namelist()
+        check(len(names) == 2, "ZIP có đủ 2 file")
+        check(len(set(names)) == 2, "ZIP tự đổi tên khi hai file trùng tên")
+        check(
+            all(name.startswith("cung-ten_compressed") for name in names),
+            "Tên file trong ZIP giữ tên kết quả của từng job",
+        )
+        check(
+            zf.read(names[0]) == single_outputs[0]
+            and zf.read(names[1]) == single_outputs[1],
+            "Nội dung từng file trong ZIP giống bản tải riêng",
+        )
+
+    bad = client.post("/api/zip", json={"job_ids": ["khong-hop-le"]})
+    check(bad.status_code == 400, "Job id sai định dạng bị từ chối với HTTP 400")
+    unknown = client.post("/api/zip", json={"job_ids": ["0" * 32]})
+    check(unknown.status_code == 404, "Job id không tồn tại bị từ chối với HTTP 404")
 
 
 def main() -> int:
@@ -197,6 +254,33 @@ def main() -> int:
         "Ảnh có thông tin độ phân giải/chất lượng đầu ra",
     )
     first_output = Path(img_result["output_path"])
+
+    # 2b. Hồi quy: ảnh nhiễu rất chi tiết vẫn ghi được JPEG (optimize/progressive)
+    pure_noise_png = INPUTS / "pure_noise_3000x2000.png"
+    make_pure_noise_png(pure_noise_png)
+    pure_noise_hash = sha256(pure_noise_png)
+    detailed_result = compress.compress_image(pure_noise_png, RUN_DIR, TARGET_SMALL)
+    detailed_output = Path(detailed_result["output_path"])
+    print(
+        f"  pure_noise.png -> {detailed_output.name}, "
+        f"{detailed_result['output_bytes'] / 1024 / 1024:.2f} MB, "
+        f"{detailed_result['status']}"
+    )
+    check(
+        detailed_result["status"] in ("ok", "target_not_met"),
+        "Ảnh nhiễu 3000x2000 nén được thành công (ok hoặc target_not_met)",
+    )
+    check(
+        detailed_output.suffix.lower() == ".jpg",
+        "Ảnh nhiễu 3000x2000 được lưu thành JPEG",
+    )
+    with Image.open(detailed_output) as detailed_out:
+        check(detailed_out.format == "JPEG", "File kết quả mở lại là JPEG hợp lệ")
+        detailed_out.load()
+    check(
+        sha256(pure_noise_png) == pure_noise_hash,
+        "Bản gốc ảnh nhiễu 3000x2000 không thay đổi",
+    )
 
     # 3. Chạy lần hai không ghi đè
     img_result_2 = compress.compress_image(noise_png, RUN_DIR, TARGET_SMALL)
@@ -307,7 +391,10 @@ def main() -> int:
     )
     check(pdf_previews["page"] == 1, "Preview PDF chọn đúng số trang")
 
-    # 9. Bản gốc không thay đổi
+    # 9. API đóng gói ZIP
+    test_zip_endpoint()
+
+    # 10. Bản gốc không thay đổi
     for path in sources:
         check(sha256(path) == before[path], f"Bản gốc không đổi: {path.name}")
 

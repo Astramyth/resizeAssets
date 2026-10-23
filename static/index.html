@@ -22,8 +22,9 @@
           <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
         </svg>
       </span>
-      <h2>Kéo thả file vào đây</h2>
-      <p>hoặc bấm để chọn · JPG, PNG, WebP, TIFF, BMP, HEIC, PDF · tối đa 500 MB</p>
+      <h2>Kéo thả ảnh hoặc PDF vào đây</h2>
+      <p>Có thể chọn nhiều file cùng lúc · tự đóng gói ZIP khi xong</p>
+      <p class="drop-formats">hoặc bấm để chọn · JPG, PNG, WebP, TIFF, BMP, HEIC, PDF · tối đa 500 MB</p>
       <input id="fileInput" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp,.heic,.heif,.pdf" hidden>
     </div>
 
@@ -41,7 +42,9 @@
     <p class="ssim-legend">SSIM gần 1.0 = gần giống bản gốc; chỉ là chỉ số tham khảo, hãy tự xem ảnh so sánh.</p>
   </div>
 
-  <section id="results" class="results" aria-live="polite" aria-label="Danh sách file đã xử lý"></section>
+  <section id="results" class="results" aria-label="Danh sách file đã xử lý">
+    <p id="emptyState" class="empty-state">Chưa có file nào. Kéo thả ảnh hoặc PDF vào khung phía trên — có thể chọn nhiều file cùng lúc.</p>
+  </section>
 
   <footer class="note">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -51,6 +54,18 @@
     <span>File được xử lý trên máy bạn, không tải lên internet. Bản gốc không bị thay đổi.</span>
   </footer>
 </div>
+
+<div id="pageDrop" class="page-drop" hidden aria-hidden="true">
+  <div class="page-drop-inner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 16V4m0 0 4 4m-4-4-4 4"/>
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+    </svg>
+    <p>Thả file để bắt đầu nén</p>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <div id="compareModal" class="modal" hidden>
   <div class="modal-backdrop" data-close></div>
@@ -63,6 +78,7 @@
     <div class="modal-foot">Ảnh xem trước chỉ để tham khảo; hãy tải bản nén về để kiểm tra ở kích thước thật.</div>
   </div>
 </div>
+<script src="/static/vendor/motion.js" defer></script>
 <script src="/static/app.js" defer></script>
 </body>
 </html>

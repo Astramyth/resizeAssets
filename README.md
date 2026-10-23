@@ -41,17 +41,16 @@ Yêu cầu: Windows, Python 3.12 đã có trên `PATH`.
 ## Dùng giao diện web
 
 - Ô **Dung lượng mục tiêu (MB)** mặc định là `5`.
-- Có thể chọn nhiều file; các file được xử lý lần lượt.
-- Mỗi file có một thẻ hiển thị:
-  - dung lượng trước → sau và % giảm;
-  - độ phân giải trước/sau (ảnh) hoặc số trang + DPI ảnh trong PDF;
-  - định dạng và chất lượng encoder đã dùng;
-  - SSIM kèm giải thích;
-  - trạng thái `already_small` / `target_not_met` / cảnh báo chữ PDF.
+- Kéo thả hoặc chọn **nhiều file cùng lúc**; mỗi lần thả/chọn là một lượt nén. Toàn bộ trang đều là vùng thả.
+- Trong mỗi lượt, các file được xử lý lần lượt; một file lỗi không dừng các file còn lại. File không hỗ trợ bị bỏ qua và được liệt kê ngay trên đầu lượt nén.
+- Mỗi file là một dòng gọn: tên, dung lượng trước → sau, % giảm và trạng thái bằng chữ kèm biểu tượng. Nút **Chi tiết** mở độ phân giải, định dạng/chất lượng, SSIM, cảnh báo, **Tải về** và **So sánh**.
+- Khi lượt nén xong:
+  - từ **2 file thành công** trở lên: tự động đóng gói một file ZIP và tải về; nút **Tải lại file ZIP (N file)** tải lại.
+  - đúng **1 file**: tự động tải file đó; nút **Tải về** tải lại.
+- Lượt nén mới luôn nằm trên cùng. Các lượt trước được thu gọn vào mục **Các lần nén trước (K)** và chỉ hiện khi bấm mở.
 - **So sánh** mở ảnh cạnh nhau:
   - Ảnh: toàn bộ ảnh (vừa 1200 px) và vùng cắt 100% ở giữa (800×800).
   - PDF: cặp trang gốc/bản nén ở 150 DPI, có nút chuyển trang.
-- **Tải về** tải đúng file kết quả, tên dạng `<tên>_compressed.<đuôi>`.
 
 Giới hạn upload: 500 MB mỗi request. Trong ứng dụng, `1 MB = 1024 × 1024 byte`.
 
@@ -83,11 +82,12 @@ Lệnh:
 .venv\Scripts\python test_compress.py
 ```
 
-Kết quả: **35/35 kiểm tra đạt**.
+Kết quả: **53/53 kiểm tra đạt**.
 
 | Hạng mục | Kết quả thực tế |
 |---|---|
 | PNG nhiễu 3000×2000 (12.78 MB) → mục tiêu 0.5 MB | 0.50 MB, `ok`, 2167×1445, SSIM 0.8611 |
+| PNG nhiễu thuần 3000×2000 (12.78 MB) → mục tiêu 0.5 MB | 2.09 MB, `target_not_met`, vẫn ghi JPEG mở lại được |
 | Chạy lại cùng thư mục | Tạo `_compressed_2`, không ghi đè file cũ |
 | PNG RGBA 1800×1200 (1.61 MB) → mục tiêu 1 MB | WebP 0.87 MB, `ok`, còn kênh alpha |
 | Cùng ảnh RGBA → mục tiêu 0.02 MB | `target_not_met`, vẫn tạo bản nhỏ nhất |
@@ -97,13 +97,15 @@ Kết quả: **35/35 kiểm tra đạt**.
 | PDF có mật khẩu | Báo `ValueError` tiếng Việt, không tạo file rác |
 | SHA-256 của 5 file gốc trước/sau | Không đổi |
 | Preview ảnh/PDF | Trả đủ PNG, chọn đúng trang |
+| `POST /api/zip` với 2 file cùng tên | ZIP có 2 mục tên duy nhất, nội dung trùng bản tải riêng; job id sai trả 400, id không tồn tại trả 404 |
 | `python app.py` | Khởi động OK, `GET /` trả HTTP 200 tại `127.0.0.1:8765` |
-| Giao diện ở 390 px và 500 px | Không tràn ngang; nén ảnh/PDF, mở modal so sánh và chuyển trang PDF không lỗi JS |
+| Giao diện ở 375 px và 1280 px | Không tràn ngang; nén 3 file, tự tải ZIP đủ 3 file, lượt cũ thu gọn, mở/đóng **Chi tiết**, không lỗi console |
 
 <details>
 <summary>Xem toàn bộ output kiểm tra</summary>
 
 ```text
+Suspension not allowed here
 Đang tạo dữ liệu kiểm tra...
 PASS: SSIM ảnh giống hệt bằng 1.0
 PASS: SSIM giảm khi ảnh bị nhiễu
@@ -111,6 +113,11 @@ PASS: SSIM giảm khi ảnh bị nhiễu
 PASS: Ảnh nén không vượt mục tiêu khi trạng thái không phải target_not_met
 PASS: Ảnh không có alpha được lưu thành JPEG
 PASS: Ảnh có thông tin độ phân giải/chất lượng đầu ra
+  pure_noise.png -> pure_noise_3000x2000_compressed.jpg, 2.09 MB, target_not_met
+PASS: Ảnh nhiễu 3000x2000 nén được thành công (ok hoặc target_not_met)
+PASS: Ảnh nhiễu 3000x2000 được lưu thành JPEG
+PASS: File kết quả mở lại là JPEG hợp lệ
+PASS: Bản gốc ảnh nhiễu 3000x2000 không thay đổi
 PASS: File kết quả lần một vẫn còn sau lần chạy thứ hai
 PASS: Lần chạy thứ hai tạo file mới, không ghi đè
 PASS: Tên file lần hai có hậu tố _2
@@ -139,14 +146,30 @@ PASS: Preview ảnh trả đủ 4 ảnh PNG
 PASS: Preview ảnh là dữ liệu PNG
 PASS: Preview PDF trả đủ cặp trang
 PASS: Preview PDF chọn đúng số trang
+PASS: API nén nhận file để kiểm tra ZIP
+PASS: API nén trả job_id để kiểm tra ZIP
+PASS: Tải được từng file kết quả để so với ZIP
+PASS: API nén nhận file để kiểm tra ZIP
+PASS: API nén trả job_id để kiểm tra ZIP
+PASS: Tải được từng file kết quả để so với ZIP
+PASS: API ZIP trả về thành công
+PASS: API ZIP trả đúng MIME application/zip
+PASS: ZIP có đủ 2 file
+PASS: ZIP tự đổi tên khi hai file trùng tên
+PASS: Tên file trong ZIP giữ tên kết quả của từng job
+PASS: Nội dung từng file trong ZIP giống bản tải riêng
+PASS: Job id sai định dạng bị từ chối với HTTP 400
+PASS: Job id không tồn tại bị từ chối với HTTP 404
 PASS: Bản gốc không đổi: noise_3000x2000.png
 PASS: Bản gốc không đổi: alpha_1800x1200.png
 PASS: Bản gốc không đổi: small_300x200.jpg
 PASS: Bản gốc không đổi: invoice_3_pages.pdf
 PASS: Bản gốc không đổi: editor_data_1_page.pdf
 
-TẤT CẢ 35 KIỂM TRA ĐỀU ĐẠT
+TẤT CẢ 53 KIỂM TRA ĐỀU ĐẠT
 ```
+
+Dòng `Suspension not allowed here` do thư viện native của PyMuPDF in ra khi tạo PDF kiểm tra; đây không phải lỗi của ứng dụng và không ảnh hưởng kết quả.
 
 </details>
 
@@ -229,6 +252,8 @@ app.py             Flask server (127.0.0.1:8765)
 static/index.html  markup giao diện web (tiếng Việt)
 static/style.css   toàn bộ CSS của giao diện
 static/app.js      toàn bộ JavaScript của giao diện
+static/vendor/motion.js          Motion 12.23.24 (UMD, vendor cục bộ, không dùng CDN)
+static/vendor/motion.LICENSE.txt giấy phép MIT của Motion
 requirements.txt   flask, pillow, numpy, pymupdf, pillow-heif
 run.bat            tạo .venv/cài thư viện lần đầu rồi chạy app
 test_compress.py   tự kiểm tra bằng assert, không cần pytest
