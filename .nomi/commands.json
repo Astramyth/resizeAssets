@@ -1,0 +1,58 @@
+[
+  {
+    "command": "run.bat",
+    "ok": false,
+    "exit": 1,
+    "alive": false,
+    "seconds": 0,
+    "at": "2026-10-31T04:22:08.537Z"
+  },
+  {
+    "command": ".\\run.bat",
+    "ok": true,
+    "exit": null,
+    "alive": true,
+    "seconds": 200.2,
+    "at": "2026-10-31T04:26:04.426Z"
+  },
+  {
+    "command": ".venv\\Scripts\\python test_compress.py",
+    "ok": true,
+    "exit": 0,
+    "alive": false,
+    "seconds": 22.7,
+    "at": "2026-10-31T04:28:05.381Z"
+  },
+  {
+    "command": "python -m venv .venv",
+    "ok": true,
+    "exit": 0,
+    "alive": false,
+    "seconds": 2,
+    "at": "2026-10-31T04:44:29.206Z"
+  },
+  {
+    "command": ".venv\\Scripts\\python -m pip install -r requirements.txt",
+    "ok": true,
+    "exit": 0,
+    "alive": false,
+    "seconds": 0.9,
+    "at": "2026-10-31T04:44:30.241Z"
+  },
+  {
+    "command": ".venv\\Scripts\\python app.py",
+    "ok": true,
+    "exit": null,
+    "alive": true,
+    "seconds": 8.3,
+    "at": "2026-10-31T04:44:38.584Z"
+  },
+  {
+    "command": ".venv\\Scripts\\python compress.py anh.jpg --target 5 --out da-nen",
+    "ok": true,
+    "exit": 0,
+    "alive": false,
+    "seconds": 5.6,
+    "at": "2026-10-31T04:44:44.338Z"
+  }
+]

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi" data-size="1280x400">
+<head>
+<meta charset="utf-8">
+<title>Nén ảnh &amp; PDF</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 400px; overflow: hidden; background: #f3f0e8; color: #17201c; font-family: "Segoe UI", system-ui, sans-serif; }
+  .photo { position: absolute; left: 560px; top: 0; width: 720px; height: 400px; object-fit: cover; object-position: 50% 78%; display: block; }
+  .shade { position: absolute; left: 560px; right: 0; bottom: 0; height: 170px; background: linear-gradient(180deg, rgba(10,30,24,0), rgba(10,30,24,.72)); }
+  .copy { position: absolute; left: 56px; top: 88px; width: 480px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid rgba(15,107,83,.22); border-radius: 999px; background: rgba(255,253,247,.7); color: #0a4d3c; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #0f6b53; }
+  h1 { margin: 16px 0 0; font-family: Cambria, "Times New Roman", Georgia, serif; font-size: 66px; font-weight: 600; line-height: 1.02; letter-spacing: -.03em; white-space: nowrap; }
+  p { margin: 14px 0 0; color: #67716b; font-size: 18px; line-height: 1.45; max-width: 440px; }
+  .weight { position: absolute; left: 592px; right: 32px; bottom: 28px; color: #fffdf7; }
+  .figures { display: flex; align-items: baseline; gap: 16px; font-family: Cambria, "Times New Roman", Georgia, serif; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; letter-spacing: -.02em; }
+  .figures b { font-size: 58px; font-weight: 600; line-height: 1; }
+  .figures span { font-size: 26px; opacity: .85; }
+  .figures em { margin-left: auto; font-style: normal; font-size: 30px; color: #dcefe6; }
+  .track { margin-top: 12px; height: 10px; border-radius: 99px; background: rgba(255,253,247,.26); overflow: hidden; }
+  .track i { display: block; width: 14.07%; height: 100%; border-radius: inherit; background: #fffdf7; }
+</style>
+</head>
+<body>
+  <img class="photo" src="media/toan-canh.jpg" alt="">
+  <div class="shade"></div>
+  <div class="copy">
+    <span class="eyebrow">Xử lý ngay trên máy bạn</span>
+    <h1>Nén ảnh &amp; PDF</h1>
+    <p>Kéo thả ảnh hoặc PDF nặng, nhận bản nhẹ hơn. Không tải lên internet, bản gốc giữ nguyên.</p>
+  </div>
+  <div class="weight">
+    <div class="figures"><span>89 MB →</span><b>12 MB</b><em>giảm 86%</em></div>
+    <div class="track"><i></i></div>
+  </div>
+</body>
+</html>

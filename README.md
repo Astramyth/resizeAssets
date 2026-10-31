@@ -1,22 +1,48 @@
-# Nén ảnh & PDF trên máy tính (Windows + Python)
+<p align="center">
+  <img src="docs/banner.png" alt="Nén ảnh và PDF: 4 file mẫu từ 89 MB còn 12 MB, xử lý ngay trên máy bạn">
+</p>
 
-Ứng dụng cục bộ giúp kéo thả ảnh hoặc PDF 20–30 MB và nhận về bản nhẹ hơn (mặc định khoảng 5 MB) mà vẫn giữ độ nét, màu sắc và nội dung ở mức chấp nhận được.
+<h1 align="center">Nén ảnh &amp; PDF</h1>
 
-- Giao diện web chạy tại `http://127.0.0.1:8765`, chỉ mở trên máy bạn.
-- Không upload file lên internet.
-- **Không bao giờ ghi đè file gốc.** Mọi kết quả là một file mới.
-- Khi không thể đạt mục tiêu mà vẫn giữ chất lượng, ứng dụng nói rõ bằng trạng thái `target_not_met` thay vì hứa hẹn sai.
+<p align="center">Ứng dụng Windows chạy ngay trên máy, dành cho người cần gửi ảnh và PDF nặng: kéo thả file, nhập dung lượng mong muốn, nhận bản nhẹ hơn.</p>
+
+<p align="center">
+  <a href="#chạy-nhanh">Chạy nhanh</a> ·
+  <a href="#ứng-dụng-làm-được-gì">Làm được gì</a> ·
+  <a href="#đã-kiểm-chứng">Đã kiểm chứng</a> ·
+  <a href="#giới-hạn">Giới hạn</a> ·
+  <a href="docs/ky-thuat.md">Tài liệu kỹ thuật</a>
+</p>
+
+[![Trailer 24 giây: ảnh 30 MB được nén, bốn file từ 89 MB còn 12 MB, so sánh bản gốc và bản nén ở 100%](.nomi/video/preview.webp)](.nomi/video/demo.mp4)
+
+<p align="center"><sub>Trailer dựng từ giao diện thật và số của một lần chạy thật, thời gian đã rút gọn (lần chạy thật mất 13 giây). Bấm để xem bản có tiếng.</sub></p>
+
+## Điểm chính
+
+- **Không rời khỏi máy bạn.** Ứng dụng chỉ mở tại `127.0.0.1:8765`, không tải file lên internet.
+- **Bản gốc không bị đụng tới.** Mọi kết quả là một file mới, không bao giờ ghi đè.
+- **Một ô duy nhất phải điền:** dung lượng mục tiêu, mặc định 5 MB.
+- **Nhiều file một lượt.** Từ 2 file trở lên, kết quả tự đóng gói ZIP và tải về.
+- **Nói thẳng khi không đạt.** Không xuống được mục tiêu mà vẫn giữ chất lượng thì ứng dụng báo `target_not_met` và đưa bản nhỏ nhất.
 
 ## Chạy nhanh
 
-1. Nhấp đúp `run.bat`.
-   - Lần đầu, file này tạo `.venv`, cài thư viện trong `requirements.txt`, rồi mở ứng dụng.
-   - Các lần sau, nó dùng luôn `.venv` đã có.
-2. Trình duyệt tự mở trang `http://127.0.0.1:8765/`.
-3. Kéo thả file, nhập dung lượng mục tiêu (MB), chờ nén, rồi bấm **Tải về** hoặc **So sánh**.
-4. Nhấn `Ctrl+C` trong cửa sổ dòng lệnh để dừng ứng dụng.
+Cần Windows và Python trên `PATH` (đã chạy với 3.12.10 và 3.14.8). Sau khi tải mã nguồn, nhấp đúp `run.bat`, hoặc gõ:
 
-Nếu muốn chạy bằng tay:
+```powershell
+git clone https://github.com/Astramyth/resizeAssets
+cd resizeAssets
+.\run.bat
+```
+
+Lần đầu, lệnh này tạo `.venv` và cài thư viện, có thể mất vài phút. Khi thấy dòng dưới đây, trình duyệt tự mở trang ứng dụng:
+
+```text
+Đang chạy tại http://127.0.0.1:8765/  (Ctrl+C để dừng)
+```
+
+Muốn chạy từng bước:
 
 ```powershell
 python -m venv .venv
@@ -24,243 +50,88 @@ python -m venv .venv
 .venv\Scripts\python app.py
 ```
 
-Yêu cầu: Windows, Python 3.12 đã có trên `PATH`.
+## Ứng dụng làm được gì
 
-## Định dạng hỗ trợ
+### Nén cả loạt file
 
-| Loại | Định dạng đầu vào | Đầu ra |
+Kéo thả hoặc chọn nhiều file, mỗi file hiện trạng thái riêng. Một file lỗi không dừng các file còn lại, file không hỗ trợ được bỏ qua và liệt kê rõ.
+
+![Một lượt nén 4 file: 89 MB còn 12 MB, giảm 86%, có nút tải lại file ZIP](docs/images/ket-qua.png)
+
+Số thật của lượt nén trên, mục tiêu 5 MB:
+
+| File | Trước | Sau | Giảm | Cách nén | SSIM |
+|---|---|---|---|---|---|
+| `nha-mau-toan-canh.jpg` | 30.49 MB | 4.85 MB | 84.1% | JPEG q81, giữ 6240×4160 | 0.9793 |
+| `noi-that-go.jpg` | 19.89 MB | 4.67 MB | 76.5% | JPEG q92, giữ 6144×4098 | 0.9927 |
+| `ho-so-nha-mau.pdf` | 37.69 MB | 2.38 MB | 93.7% | 2 trang, ảnh 300 DPI, q90 | 0.9988 |
+| `anh-dang-web.jpg` | 579 KB | 579 KB | 0% | Đã nhỏ hơn mục tiêu, giữ nguyên | 1.0000 |
+
+### Tự kiểm tra bằng mắt
+
+**So sánh** đặt bản gốc cạnh bản nén, cả toàn ảnh lẫn vùng cắt 100% ở giữa. SSIM chỉ là chỉ số tham khảo, nên đây mới là phần nên nhìn.
+
+![Màn So sánh của một ảnh: bản gốc và sau nén đặt cạnh nhau, kèm vùng cắt 100%](docs/images/so-sanh.jpg)
+
+### Nén PDF mà giữ nguyên chữ
+
+Chỉ ảnh bên trong PDF bị nén lại. Chữ, vector, form và liên kết được giữ, số trang và nội dung chữ được kiểm tra lại sau khi nén. Dữ liệu chỉnh sửa ẩn của Photoshop/Illustrator được bỏ trước, nên có file giảm mạnh mà không cần đụng tới ảnh.
+
+![Màn So sánh của PDF: trang gốc và trang sau nén, có nút chuyển trang](docs/images/so-sanh-pdf.jpg)
+
+### Định dạng
+
+| Loại | Đầu vào | Đầu ra |
 |---|---|---|
-| Ảnh không có alpha | `.jpg`, `.jpeg`, `.png`, `.webp`, `.tif`, `.tiff`, `.bmp`, `.heic`, `.heif` | `.jpg` |
-| Ảnh có alpha thật | `.png`, `.webp`, `.tif`, `.heic`, `.heif`... | `.webp` |
+| Ảnh không trong suốt | `.jpg` `.jpeg` `.png` `.webp` `.tif` `.tiff` `.bmp` `.heic` `.heif` | `.jpg` |
+| Ảnh có vùng trong suốt | `.png` `.webp` `.tif` `.heic` `.heif`… | `.webp` |
 | Tài liệu | `.pdf` | `.pdf` |
 
-- Ảnh có alpha nhìn thấy được (alpha không phải toàn 255) mới chuyển sang WebP. Alpha toàn 255 được coi là không trong suốt và xuất JPEG.
-- Ảnh nhiều khung (TIFF nhiều trang, WebP động) chỉ xử lý khung đầu tiên.
-- PDF có mật khẩu bị từ chối với thông báo tiếng Việt; hãy mở khóa PDF trước.
-
-## Dùng giao diện web
-
-- Ô **Dung lượng mục tiêu (MB)** mặc định là `5`.
-- Kéo thả hoặc chọn **nhiều file cùng lúc**; mỗi lần thả/chọn là một lượt nén. Toàn bộ trang đều là vùng thả.
-- Trong mỗi lượt, các file được xử lý lần lượt; một file lỗi không dừng các file còn lại. File không hỗ trợ bị bỏ qua và được liệt kê ngay trên đầu lượt nén.
-- Mỗi file là một dòng gọn: tên, dung lượng trước → sau, % giảm và trạng thái bằng chữ kèm biểu tượng. Nút **Chi tiết** mở độ phân giải, định dạng/chất lượng, SSIM, cảnh báo, **Tải về** và **So sánh**.
-- Khi lượt nén xong:
-  - từ **2 file thành công** trở lên: tự động đóng gói một file ZIP và tải về; nút **Tải lại file ZIP (N file)** tải lại.
-  - đúng **1 file**: tự động tải file đó; nút **Tải về** tải lại.
-- Lượt nén mới luôn nằm trên cùng. Các lượt trước được thu gọn vào mục **Các lần nén trước (K)** và chỉ hiện khi bấm mở.
-- **So sánh** mở ảnh cạnh nhau:
-  - Ảnh: toàn bộ ảnh (vừa 1200 px) và vùng cắt 100% ở giữa (800×800).
-  - PDF: cặp trang gốc/bản nén ở 150 DPI, có nút chuyển trang.
-
-Giới hạn upload: 500 MB mỗi request. Trong ứng dụng, `1 MB = 1024 × 1024 byte`.
-
-## Dùng dòng lệnh
+### Dùng dòng lệnh
 
 ```powershell
-.venv\Scripts\python compress.py FILE [FILE ...] [--target MB] [--out DIR]
+.venv\Scripts\python compress.py anh.jpg --target 5 --out da-nen
 ```
-
-- `--target` mặc định `5` MB.
-- `--out` mặc định là thư mục chứa file gốc.
-- Ví dụ:
-
-```powershell
-.venv\Scripts\python compress.py "E:\project-Annhome\Sample-jpg-image-30mb-16.jpg" --target 5 --out _testdata
-```
-
-Kết quả CLI in bảng: file, trước MB, sau MB, tỉ lệ, độ phân giải/DPI, chất lượng, SSIM, trạng thái.
-
-## Kết quả kiểm thử
-
-Môi trường đã kiểm tra: Python 3.12.10, Pillow 13.0.0, NumPy 2.5.4, PyMuPDF 2.0, Flask 3.1.3, pillow-heif 1.8.1.
-
-### Tự kiểm tra
-
-Lệnh:
-
-```powershell
-.venv\Scripts\python test_compress.py
-```
-
-Kết quả: **53/53 kiểm tra đạt**.
-
-| Hạng mục | Kết quả thực tế |
-|---|---|
-| PNG nhiễu 3000×2000 (12.78 MB) → mục tiêu 0.5 MB | 0.50 MB, `ok`, 2167×1445, SSIM 0.8611 |
-| PNG nhiễu thuần 3000×2000 (12.78 MB) → mục tiêu 0.5 MB | 2.09 MB, `target_not_met`, vẫn ghi JPEG mở lại được |
-| Chạy lại cùng thư mục | Tạo `_compressed_2`, không ghi đè file cũ |
-| PNG RGBA 1800×1200 (1.61 MB) → mục tiêu 1 MB | WebP 0.87 MB, `ok`, còn kênh alpha |
-| Cùng ảnh RGBA → mục tiêu 0.02 MB | `target_not_met`, vẫn tạo bản nhỏ nhất |
-| File 3.6 KB → mục tiêu 5 MB | `already_small`, bản sao byte-for-byte |
-| PDF 3 trang có ảnh lớn + chữ (1.21 MB) → mục tiêu 0.5 MB | 0.10 MB, 150 DPI/q80, đủ 3 trang, `text_identical: true`, SSIM 0.9907 |
-| PDF 1 trang có ảnh nhỏ + 3 MB `/PieceInfo` ẩn (3.01 MB) → mục tiêu 1 MB | 0.01 MB, `ok`, bỏ dữ liệu ẩn, không nén lại ảnh, render 72 DPI giống hệt |
-| PDF có mật khẩu | Báo `ValueError` tiếng Việt, không tạo file rác |
-| SHA-256 của 5 file gốc trước/sau | Không đổi |
-| Preview ảnh/PDF | Trả đủ PNG, chọn đúng trang |
-| `POST /api/zip` với 2 file cùng tên | ZIP có 2 mục tên duy nhất, nội dung trùng bản tải riêng; job id sai trả 400, id không tồn tại trả 404 |
-| `python app.py` | Khởi động OK, `GET /` trả HTTP 200 tại `127.0.0.1:8765` |
-| Giao diện ở 375 px và 1280 px | Không tràn ngang; nén 3 file, tự tải ZIP đủ 3 file, lượt cũ thu gọn, mở/đóng **Chi tiết**, không lỗi console |
-
-<details>
-<summary>Xem toàn bộ output kiểm tra</summary>
 
 ```text
-Suspension not allowed here
-Đang tạo dữ liệu kiểm tra...
-PASS: SSIM ảnh giống hệt bằng 1.0
-PASS: SSIM giảm khi ảnh bị nhiễu
-  noise.png -> noise_3000x2000_compressed.jpg, 0.50 MB, ok, SSIM 0.8611
-PASS: Ảnh nén không vượt mục tiêu khi trạng thái không phải target_not_met
-PASS: Ảnh không có alpha được lưu thành JPEG
-PASS: Ảnh có thông tin độ phân giải/chất lượng đầu ra
-  pure_noise.png -> pure_noise_3000x2000_compressed.jpg, 2.09 MB, target_not_met
-PASS: Ảnh nhiễu 3000x2000 nén được thành công (ok hoặc target_not_met)
-PASS: Ảnh nhiễu 3000x2000 được lưu thành JPEG
-PASS: File kết quả mở lại là JPEG hợp lệ
-PASS: Bản gốc ảnh nhiễu 3000x2000 không thay đổi
-PASS: File kết quả lần một vẫn còn sau lần chạy thứ hai
-PASS: Lần chạy thứ hai tạo file mới, không ghi đè
-PASS: Tên file lần hai có hậu tố _2
-  alpha.png -> alpha_1800x1200_compressed.webp, 0.87 MB, ok
-PASS: Ảnh RGBA có alpha thật được lưu thành WebP
-PASS: WebP không vượt mục tiêu khi trạng thái không phải target_not_met
-PASS: WebP đầu ra còn kênh alpha
-PASS: Mục tiêu bất khả thi trả trạng thái target_not_met
-PASS: Vẫn tạo được bản nhỏ nhất khi không đạt mục tiêu
-PASS: File nhỏ hơn mục tiêu có trạng thái already_small
-PASS: File already_small là bản sao byte-for-byte
-  invoice.pdf -> invoice_3_pages_compressed.pdf, 0.10 MB, ok, 150 DPI/q80, SSIM 0.9907
-PASS: PDF đầu ra giữ đủ 3 trang
-PASS: Chữ trong PDF đầu ra giống bản gốc
-PASS: PDF không vượt mục tiêu khi trạng thái không phải target_not_met
-PASS: Mở lại PDF đầu ra thấy đúng 3 trang
-  editor_data.pdf -> editor_data_1_page_compressed.pdf, 0.01 MB, ok, bỏ dữ liệu ẩn: True
-PASS: PDF có dữ liệu chỉnh sửa ẩn giảm còn dưới 25% dung lượng gốc
-PASS: Đã bỏ dữ liệu chỉnh sửa ẩn khỏi PDF
-PASS: Bước bỏ dữ liệu ẩn không nén lại ảnh
-PASS: PDF bỏ dữ liệu ẩn giữ đúng 1 trang
-PASS: Chữ trong PDF bỏ dữ liệu ẩn giống bản gốc
-PASS: Trang PDF render 72 DPI giống hệt sau khi bỏ dữ liệu ẩn
-PASS: PDF có mật khẩu báo lỗi tiếng Việt rõ ràng
-PASS: Preview ảnh trả đủ 4 ảnh PNG
-PASS: Preview ảnh là dữ liệu PNG
-PASS: Preview PDF trả đủ cặp trang
-PASS: Preview PDF chọn đúng số trang
-PASS: API nén nhận file để kiểm tra ZIP
-PASS: API nén trả job_id để kiểm tra ZIP
-PASS: Tải được từng file kết quả để so với ZIP
-PASS: API nén nhận file để kiểm tra ZIP
-PASS: API nén trả job_id để kiểm tra ZIP
-PASS: Tải được từng file kết quả để so với ZIP
-PASS: API ZIP trả về thành công
-PASS: API ZIP trả đúng MIME application/zip
-PASS: ZIP có đủ 2 file
-PASS: ZIP tự đổi tên khi hai file trùng tên
-PASS: Tên file trong ZIP giữ tên kết quả của từng job
-PASS: Nội dung từng file trong ZIP giống bản tải riêng
-PASS: Job id sai định dạng bị từ chối với HTTP 400
-PASS: Job id không tồn tại bị từ chối với HTTP 404
-PASS: Bản gốc không đổi: noise_3000x2000.png
-PASS: Bản gốc không đổi: alpha_1800x1200.png
-PASS: Bản gốc không đổi: small_300x200.jpg
-PASS: Bản gốc không đổi: invoice_3_pages.pdf
-PASS: Bản gốc không đổi: editor_data_1_page.pdf
-
-TẤT CẢ 53 KIỂM TRA ĐỀU ĐẠT
+File                Before MB  After MB  Ratio  Resolution/DPI          Quality   SSIM    Status
+------------------------------------------------------------------------------------------------
+anh_compressed.jpg  30.49      4.85      15.9%  6240x4160 -> 6240x4160  JPEG q81  0.9793  ok
 ```
 
-Dòng `Suspension not allowed here` do thư viện native của PyMuPDF in ra khi tạo PDF kiểm tra; đây không phải lỗi của ứng dụng và không ảnh hưởng kết quả.
+`--target` mặc định 5 MB. `--out` mặc định là thư mục chứa file gốc. Trong ứng dụng, `1 MB = 1024 × 1024 byte`.
 
-</details>
+Không muốn tự mở trình duyệt khi chạy `app.py`: đặt biến môi trường `COMPRESS_NO_BROWSER=1`.
 
-### Ảnh mẫu 14 MB
+## Đã kiểm chứng
 
-Lệnh đã chạy:
+Ngày 2026-10-31, trên Windows 11:
 
-```powershell
-.venv\Scripts\python compress.py "E:\project-Annhome\Sample-jpg-image-30mb-16.jpg" --target 5 --out _testdata
-```
+- `test_compress.py`: **53/53 kiểm tra đạt** trên cả Python 3.12.10 và 3.14.8.
+- `.\run.bat` chạy từ trạng thái chưa có `.venv`: tạo môi trường, cài thư viện, server lên. Các lệnh trong README đều đã được chạy.
+- Trên trình duyệt thật (Edge 156, 1440×900): tải 4 file qua ô chọn file, nén xong trong 13 giây, ZIP tự tải về đủ 4 file, mở So sánh cho ảnh và PDF, không lỗi console. Ở 375 px không tràn ngang.
+- File không hỗ trợ bị bỏ qua khi thả vào trang. File gốc giữ nguyên SHA-256 sau khi nén.
+- Kiểm tra giao diện bằng Nomi: [2/2 flow hoàn tất](.nomi/proof.md).
 
-Bảng CLI thực tế:
+Chưa kiểm chứng:
 
-```text
-File                                     Before MB  After MB  Ratio  Resolution/DPI           Quality   SSIM    Status
-----------------------------------------------------------------------------------------------------------------------
-Sample-jpg-image-30mb-16_compressed.jpg  13.45      4.89      36.4%  13583x5417 -> 6027x2404  JPEG q84  0.9799  ok    
-```
+- Kéo thả bằng chuột thật. Đường thả file mới được thử bằng sự kiện tổng hợp trong trình duyệt.
+- Chrome và Firefox, máy khác, và file sát giới hạn 500 MB.
+- HEIC, TIFF, ảnh trong suốt và PDF có mật khẩu qua giao diện web. Các trường hợp ảnh trong suốt và PDF có mật khẩu đã có trong `test_compress.py`.
 
-- File gốc: 13.45 MiB (14.102.352 byte), 13583×5417, JPEG, có EXIF + ICC.
-- File ra: 4.89 MiB (5.130.996 byte), 6027×2404, JPEG q84, progressive, giữ EXIF (orientation = 1) và ICC.
-- Thời gian chạy trên máy kiểm tra: khoảng 12,6 giây.
-- Kết quả nằm tại `_testdata\Sample-jpg-image-30mb-16_compressed.jpg`.
+## Giới hạn
 
-## Quyết định kỹ thuật
+- **Không phải lúc nào cũng đạt mục tiêu.** Ảnh đã nén mạnh hoặc PDF chỉ có chữ/vector thường không giảm được nhiều.
+- Ảnh được encode lại nên có thể mất một ít chi tiết. Ảnh nhiều khung (TIFF nhiều trang, WebP động) chỉ lấy khung đầu.
+- Bản PDF đã bỏ dữ liệu ẩn không mở lại được dạng layer trong Photoshop/Illustrator. Bản gốc vẫn còn nguyên.
+- PDF có mật khẩu bị từ chối. Hãy mở khóa trước.
+- Giới hạn 500 MB mỗi lần tải lên. File rất lớn có thể tốn nhiều RAM.
+- Server Flask chỉ dành cho một người dùng trên máy cục bộ, không dùng để triển khai.
 
-### Ảnh
+Danh sách đầy đủ, thuật toán và kết quả kiểm thử nằm trong [tài liệu kỹ thuật](docs/ky-thuat.md).
 
-- Nếu file gốc đã ≤ mục tiêu: sao chép nguyên byte sang tên mới, trạng thái `already_small`.
-- Gọi `ImageOps.exif_transpose` để ảnh đúng chiều; ghi EXIF với thẻ `0x0112` (Orientation) = 1 và giữ ICC khi không gian màu còn tương thích.
-- Không alpha → JPEG; alpha thật → WebP. CMYK và ảnh 16-bit được chuyển đổi an toàn sang RGB/L.
-- JPEG giữ subsampling của file gốc khi đọc được bằng `JpegImagePlugin.get_sampling`; nếu không, dùng 4:4:4. Luôn bật `optimize=True`, `progressive=True`.
-- Encode vào bộ nhớ, tìm quality cao nhất trong khoảng 75–95 bằng tìm kiếm nhị phân sao cho dung lượng ≤ mục tiêu.
-- Nếu quality 75 vẫn quá lớn: giảm cạnh dài còn 85% bằng LANCZOS rồi lặp lại. Không giảm dưới cạnh dài 2000 px. Nếu vẫn quá lớn, ghi bản quality 75 ở mức sàn và trả `target_not_met`.
-- SSIM: ảnh xám float32, cửa sổ đều 8×8, C1 = (0,01×255)², C2 = (0,03×255)², tính bằng integral image (không dùng scipy/skimage). Với ảnh, so vùng giữa tối đa 2048×2048 ở độ phân giải đầu ra; nếu đã thu nhỏ thì resize bản gốc về cùng kích thước trước khi so.
+## Ghi công
 
-### PDF
-
-- Nếu file gốc đã ≤ mục tiêu: sao chép nguyên byte, trạng thái `already_small`.
-- PDF có mật khẩu (`needs_pass`) bị từ chối ngay bằng `ValueError` tiếng Việt.
-- **Bước 0 (bỏ dữ liệu chỉnh sửa ẩn):** mở bản gốc, đặt `/PieceInfo` = null ở từng trang và ở catalog, bỏ `/Thumb` ở trang, thử `subset_fonts()`, rồi lưu bằng `garbage=4, deflate=True, use_objstms=1` nhưng **không** gọi `rewrite_images`. Nếu kết quả đã ≤ mục tiêu thì dùng luôn với `dpi=None`, `quality=None`, `images_recompressed=False`. Không đụng tới file nhúng, annotation, form hay XMP.
-- Thang nén: `(300,90) → (250,85) → (200,85) → (200,80) → (150,80) → (150,75)` (DPI, quality JPEG).
-- Mỗi bậc mở lại **file gốc**, bỏ dữ liệu chỉnh sửa ẩn, gọi `rewrite_images(dpi_threshold=dpi+10, dpi_target=dpi, quality=quality)`, thử `subset_fonts()`, rồi lưu bằng `garbage=4, deflate=True, use_objstms=1`.
-- Dừng ở bậc đầu tiên ≤ mục tiêu. Nếu không bậc nào đạt, giữ bản nhỏ nhất và trả `target_not_met`; nếu bản đó còn lớn hơn file gốc thì giữ nguyên file gốc (an toàn hơn).
-- Kiểm tra lại số trang phải bằng bản gốc. So sánh toàn bộ chữ bằng `page.get_text()`; kết quả là `text_identical`.
-- Kết quả PDF có thêm `editor_data_removed` (đã bỏ dữ liệu ẩn hay chưa) và `images_recompressed` (ảnh có bị encode lại hay không).
-- SSIM PDF: render trang 1, trang giữa và trang cuối (tối đa 3 trang) ở 100 DPI, ảnh xám, rồi lấy trung bình.
-
-### An toàn dữ liệu và tên file
-
-- Tên ra: `<stem>_compressed.<ext>`; nếu đã tồn tại thì `_2`, `_3`, ...
-- Ghi file bằng chế độ `xb` (tạo mới) để không bao giờ ghi đè.
-- Web: mỗi job có thư mục tạm riêng (`tempfile.mkdtemp`); thư mục được xóa khi tiến trình kết thúc (`atexit`).
-- Web: `MAX_CONTENT_LENGTH = 500 MB`; job id là uuid4 hex và được kiểm tra bằng regex; tham số `which`/`page` được whitelist.
-- Lỗi xử lý trả JSON tiếng Việt, không đưa stack trace ra giao diện; chi tiết được ghi ra console.
-
-## Giới hạn đã biết
-
-- **Không phải lúc nào cũng đạt mục tiêu.** Ảnh/PDF đã nén sẵn, ảnh có alpha nhiễu, hoặc file có cấu trúc đặc biệt có thể không xuống được mục tiêu mà vẫn giữ chất lượng. Khi đó trạng thái là `target_not_met` và ứng dụng nói rõ.
-- Chất lượng `q` là thông số của encoder (JPEG/WebP), **không phải phần trăm chất lượng**. SSIM cũng chỉ là chỉ số tham khảo, không phải lời hứa về chất lượng cảm nhận.
-- Ảnh JPEG/WebP bị encode lại nên có thể mất một ít chi tiết. Với ảnh đã nén mạnh từ trước, file ra có thể không nhỏ hơn nhiều.
-- Ảnh có cạnh dài dưới 2000 px sẽ không bị thu nhỏ thêm; nếu mục tiêu quá nhỏ, kết quả có thể là `target_not_met`.
-- PDF chỉ nén lại ảnh raster bên trong. Chữ, vector, form, annotation, liên kết được giữ nguyên; không OCR, không làm phẳng trang.
-- PDF chỉ có chữ/vector, hoặc ảnh bên trong đã nhỏ/sắc nét, thường **không thể giảm 50%**. Bước bỏ dữ liệu chỉnh sửa ẩn chỉ giúp khi file thực sự chứa dữ liệu đó.
-- Bỏ dữ liệu chỉnh sửa ẩn (Photoshop/Illustrator) là **không mất mát về mặt hiển thị/in**, nhưng bản nén sẽ không mở lại được dạng layer trong các ứng dụng đó; bản gốc vẫn giữ nguyên.
-- `subset_fonts()` có thể thất bại với một số font lạ; khi đó bỏ qua bước này và vẫn tiếp tục.
-- `text_identical` chỉ so sánh phần chữ trích xuất được. Chữ trong ảnh scan không được kiểm tra bằng so sánh text.
-- ICC được giữ cho ảnh RGB/RGBA/L/P. Ảnh CMYK hoặc 16-bit được chuyển sang RGB/L; profile ICC CMYK gốc không được gắn vào file RGB vì sai không gian màu.
-- TIFF nhiều trang và WebP động chỉ lấy khung đầu tiên.
-- HEIC/HEIF đọc được nhờ `pillow-heif`; đầu ra vẫn là JPEG/WebP, không ghi lại HEIC.
-- PDF mã hóa/mật khẩu không được hỗ trợ.
-- File rất lớn có thể dùng nhiều RAM và mất vài chục giây. Server Flask chỉ dành cho sử dụng cục bộ một người, không phải server production.
-- Giao diện dùng tiếng Việt; tên file có dấu được giữ nguyên.
-
-## Cấu trúc file
-
-```text
-compress.py        lõi nén ảnh/PDF + CLI
-app.py             Flask server (127.0.0.1:8765)
-static/index.html  markup giao diện web (tiếng Việt)
-static/style.css   toàn bộ CSS của giao diện
-static/app.js      toàn bộ JavaScript của giao diện
-static/vendor/motion.js          Motion 12.23.24 (UMD, vendor cục bộ, không dùng CDN)
-static/vendor/motion.LICENSE.txt giấy phép MIT của Motion
-requirements.txt   flask, pillow, numpy, pymupdf, pillow-heif
-run.bat            tạo .venv/cài thư viện lần đầu rồi chạy app
-test_compress.py   tự kiểm tra bằng assert, không cần pytest
-README.md          tài liệu này
-_testdata/         dữ liệu và kết quả kiểm tra (có thể xóa)
-```
-
-## Ghi chú về SSIM
-
-SSIM gần 1.0 nghĩa là bản nén gần giống bản gốc về cấu trúc sáng/tối; chỉ số này không đo được "độ đẹp" hay độ dễ đọc của chữ. Hãy dùng nút **So sánh** để xem toàn ảnh và vùng cắt 100%, đặc biệt với ảnh có chữ nhỏ hoặc PDF scan. Ứng dụng cố tình không quy đổi SSIM thành "X% chất lượng".
+- [Pillow](https://python-pillow.github.io/), [PyMuPDF](https://pymupdf.readthedocs.io/) (AGPL-3.0 hoặc giấy phép thương mại của Artifex), [NumPy](https://numpy.org/), [Flask](https://flask.palletsprojects.com/), [pillow-heif](https://github.com/bigcat88/pillow_heif).
+- [Motion](https://motion.dev/) 12.23.24, kèm sẵn trong `static/vendor`, giấy phép MIT: [xem file](static/vendor/motion.LICENSE.txt).
+- Ảnh mẫu trong demo: bộ *Tasmanian House II* của PhotoArch1, giấy phép CC0, trên [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Tasmanian_House_II.jpg).

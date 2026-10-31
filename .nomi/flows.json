@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Mở trang và thấy chỗ thả file",
+    "steps": [
+      { "do": "expect", "text": "Kéo thả ảnh hoặc PDF vào đây" },
+      { "do": "expect", "text": "Chưa có file nào" },
+      { "do": "expect", "text": "không tải lên internet" }
+    ]
+  },
+  {
+    "name": "Đặt dung lượng mục tiêu",
+    "steps": [
+      { "do": "type", "target": "#targetMb", "text": "2.5" },
+      { "do": "expect", "target": "#targetMb", "state": "visible" },
+      { "do": "expect", "text": "Chưa có file nào" }
+    ]
+  }
+]

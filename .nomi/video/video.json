@@ -1,0 +1,113 @@
+{
+  "nomi": 1,
+  "kind": "video",
+  "composed": true,
+  "created": "2026-10-31T04:42:26.956Z",
+  "target": ".nomi/video.html",
+  "browser": "Edg/156.0.4314.50",
+  "pictures": [
+    {
+      "file": "media/toan-canh.jpg",
+      "width": 2880,
+      "height": 1920,
+      "enlarged": 0.67
+    },
+    {
+      "file": "media/01-empty.png",
+      "width": 2880,
+      "height": 1800,
+      "enlarged": 0.67
+    },
+    {
+      "file": "media/02-drop-overlay.png",
+      "width": 2880,
+      "height": 1800,
+      "enlarged": 0.67
+    },
+    {
+      "file": "media/noi-that.jpg",
+      "width": 2880,
+      "height": 1921,
+      "enlarged": 0.56
+    },
+    {
+      "file": "media/pdf1.png",
+      "width": 702,
+      "height": 496,
+      "enlarged": 0.44
+    },
+    {
+      "file": "media/p3.jpg",
+      "width": 900,
+      "height": 600,
+      "enlarged": 0.34
+    },
+    {
+      "file": "media/09-compare-full.png",
+      "width": 2880,
+      "height": 1800,
+      "enlarged": 0.67
+    },
+    {
+      "file": "media/crop-goc.png",
+      "width": 960,
+      "height": 1080,
+      "enlarged": 1
+    },
+    {
+      "file": "media/crop-nen.png",
+      "width": 960,
+      "height": 1080,
+      "enlarged": 1
+    },
+    {
+      "file": "media/12-compare-pdf.png",
+      "width": 2880,
+      "height": 1800,
+      "enlarged": 0.67
+    }
+  ],
+  "scriptErrors": [],
+  "cutText": [],
+  "storyboard": [],
+  "scenes": [],
+  "cards": [],
+  "captions": [],
+  "findings": [],
+  "notes": [
+    "A composed video: written as a page and rendered frame by frame. It is a trailer, not a recording of the product in use.",
+    "sheet.png shows eight moments of the video with their times. Open it and poster.png before describing the video."
+  ],
+  "posterAt": 2.1,
+  "sound": true,
+  "audio": {
+    "codec": "mp4a.40.2",
+    "peak": 0.889,
+    "rms": 0.085
+  },
+  "window": [
+    0,
+    0,
+    1920,
+    1080
+  ],
+  "fidelity": {
+    "worst": 6.9,
+    "at": 16.5,
+    "mean": 0.94,
+    "checked": 95
+  },
+  "audioError": null,
+  "file": "demo.mp4",
+  "poster": "poster.png",
+  "preview": "preview.webp",
+  "sheet": "sheet.png",
+  "width": 1920,
+  "height": 1080,
+  "fps": 60,
+  "duration": 24,
+  "bytes": 5540044,
+  "codec": "avc1.42002a",
+  "previewSeconds": 12,
+  "previewBytes": 860166
+}

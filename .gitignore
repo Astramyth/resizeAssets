@@ -4,3 +4,4 @@ __pycache__/
 _testdata/
 .claude/
 .playwright-mcp/
+.nomi/media/
