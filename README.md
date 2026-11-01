@@ -4,10 +4,11 @@
 
 <h1 align="center">Nén ảnh &amp; PDF</h1>
 
-<p align="center">Ứng dụng Windows chạy ngay trên máy, dành cho người cần gửi ảnh và PDF nặng: kéo thả file, nhập dung lượng mong muốn, nhận bản nhẹ hơn.</p>
+<p align="center">Ứng dụng nén ảnh và PDF, chạy cục bộ trên Windows hoặc triển khai trên máy chủ: kéo thả file, nhập dung lượng mong muốn, nhận bản nhẹ hơn.</p>
 
 <p align="center">
   <a href="#chạy-nhanh">Chạy nhanh</a> ·
+  <a href="docs/DEPLOY_DOKPLOY.md">Deploy Dokploy</a> ·
   <a href="#ứng-dụng-làm-được-gì">Làm được gì</a> ·
   <a href="#đã-kiểm-chứng">Đã kiểm chứng</a> ·
   <a href="#giới-hạn">Giới hạn</a> ·
@@ -20,7 +21,7 @@
 
 ## Điểm chính
 
-- **Không rời khỏi máy bạn.** Ứng dụng chỉ mở tại `127.0.0.1:8765`, không tải file lên internet.
+- **Chọn nơi xử lý.** Khi chạy bằng `run.bat`, ứng dụng chỉ mở tại `127.0.0.1:8765`, file không rời máy bạn. Khi dùng bản web trên server, file được tải lên server để xử lý.
 - **Bản gốc không bị đụng tới.** Mọi kết quả là một file mới, không bao giờ ghi đè.
 - **Một ô duy nhất phải điền:** dung lượng mục tiêu, mặc định 5 MB.
 - **Nhiều file một lượt.** Từ 2 file trở lên, kết quả tự đóng gói ZIP và tải về.
@@ -103,7 +104,29 @@ anh_compressed.jpg  30.49      4.85      15.9%  6240x4160 -> 6240x4160  JPEG q81
 
 Không muốn tự mở trình duyệt khi chạy `app.py`: đặt biến môi trường `COMPRESS_NO_BROWSER=1`.
 
+## Chạy trên Docker / Dokploy
+
+Repo có sẵn `Dockerfile`, chạy bằng Gunicorn tại cổng `8765`, với người dùng không có quyền root. Không cần database, Redis hoặc volume.
+
+Các phiên bản thư viện của bản Linux được cố định trong `requirements-docker.lock`; bản chạy Windows tiếp tục dùng `requirements.txt`.
+
+```powershell
+docker build -t resizeassets:local .
+docker run --rm --name resizeassets-local -p 127.0.0.1:8765:8765 resizeassets:local
+```
+
+Mở `http://127.0.0.1:8765`. Xem [hướng dẫn Dokploy từng bước](docs/DEPLOY_DOKPLOY.md) để triển khai lên server, gắn tên miền và đặt mật khẩu truy cập.
+
+Giữ **1 worker, 1 thread và 1 replica**: kết quả nén nằm trong bộ nhớ tiến trình; không hỗ trợ chia tải giữa nhiều tiến trình/container. File và kết quả tạm không phải kho lưu trữ lâu dài. Restart/redeploy làm mất khả năng tải lại kết quả cũ.
+
 ## Đã kiểm chứng
+
+Ngày 2026-11-01, chuẩn bị triển khai Dokploy:
+
+- Build Docker Linux/Python 3.12 thành công, chạy bằng Gunicorn với user không có quyền root (UID 1000).
+- `test_compress.py`: **53/53 kiểm tra đạt** trên Windows/Python 3.14.8 và trong Docker Linux/Python 3.12.
+- `test_deployment.py` chạy qua HTTP trên bản Docker cuối: trang chủ, JS/CSS/Motion, upload và tải JPG/PDF, preview ảnh/PDF, ZIP và từ chối mã job sai đều đạt.
+- Chưa triển khai trên Dokploy thật, kiểm chứng DNS/HTTPS/xác thực hoặc thử tải nhiều người/file gần 500 MB.
 
 Ngày 2026-10-31, trên Windows 11:
 
@@ -126,7 +149,7 @@ Chưa kiểm chứng:
 - Bản PDF đã bỏ dữ liệu ẩn không mở lại được dạng layer trong Photoshop/Illustrator. Bản gốc vẫn còn nguyên.
 - PDF có mật khẩu bị từ chối. Hãy mở khóa trước.
 - Giới hạn 500 MB mỗi lần tải lên. File rất lớn có thể tốn nhiều RAM.
-- Server Flask chỉ dành cho một người dùng trên máy cục bộ, không dùng để triển khai.
+- Server tích hợp Flask (`python app.py`) chỉ dùng cục bộ. Bản Docker dùng Gunicorn, phù hợp dùng nội bộ có giới hạn truy cập; chưa có quản lý tài khoản, tự dọn file định kỳ hoặc hỗ trợ nhiều replica. File tạm tích tụ cho tới khi được dọn lúc tiến trình thoát bình thường; tiến trình bị kill có thể để lại file tạm. Không gắn volume lưu `/tmp`.
 
 Danh sách đầy đủ, thuật toán và kết quả kiểm thử nằm trong [tài liệu kỹ thuật](docs/ky-thuat.md).
 
