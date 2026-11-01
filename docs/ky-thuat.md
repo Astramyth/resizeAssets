@@ -115,7 +115,7 @@ Bảng trên là output CLI của cùng bốn file. Đầu ra CLI và giao diệ
 - TIFF nhiều trang và WebP động chỉ lấy khung đầu tiên.
 - HEIC/HEIF đọc được nhờ `pillow-heif`; đầu ra vẫn là JPEG/WebP, không ghi lại HEIC.
 - PDF mã hóa/mật khẩu không được hỗ trợ.
-- File rất lớn có thể dùng nhiều RAM và mất vài chục giây. Server Flask chỉ dành cho sử dụng cục bộ một người, không phải server production.
+- File rất lớn có thể dùng nhiều RAM và mất vài chục giây. Server tích hợp Flask (`python app.py`) chỉ dành cho sử dụng cục bộ. Bản Docker dùng Gunicorn; xem [hướng dẫn Dokploy](DEPLOY_DOKPLOY.md) về một worker/replica, xác thực, HTTPS và giới hạn lưu file tạm.
 - Giao diện dùng tiếng Việt; tên file có dấu được giữ nguyên.
 
 ## Cấu trúc file
@@ -129,8 +129,12 @@ static/app.js      toàn bộ JavaScript của giao diện
 static/vendor/motion.js          Motion 12.23.24 (UMD, vendor cục bộ, không dùng CDN)
 static/vendor/motion.LICENSE.txt giấy phép MIT của Motion
 requirements.txt   flask, pillow, numpy, pymupdf, pillow-heif
+requirements-docker.lock phiên bản thư viện cố định cho Docker Linux
+Dockerfile         Gunicorn, cổng 8765, một worker/thread, user không có quyền root
+.dockerignore      chỉ đưa mã ứng dụng và static vào build context
 run.bat            tạo .venv/cài thư viện lần đầu rồi chạy app
 test_compress.py   tự kiểm tra bằng assert, không cần pytest
+test_deployment.py kiểm tra HTTP trên ứng dụng đang chạy
 README.md          giới thiệu ngắn
 docs/              tài liệu này, banner và ảnh minh họa README
 .nomi/             trailer, flow và bằng chứng kiểm tra giao diện

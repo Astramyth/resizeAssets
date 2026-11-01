@@ -1,0 +1,9 @@
+# Only application files enter the build context.
+**
+!Dockerfile
+!requirements.txt
+!requirements-docker.lock
+!app.py
+!compress.py
+!static/
+!static/**
